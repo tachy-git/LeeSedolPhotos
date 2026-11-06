@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>이세돌 사진첩</title>
+<style>
+/* NeoDunggeunmo pixel font (SIL Open Font License), same as the archive */
+@font-face { font-family: "NeoDunggeunmo"; src: url("fonts/neodgm.woff2") format("woff2"); font-display: swap; }
+:root {
+  --bg: #f2f3f1; --surface: #ffffff; --ink: #17191c; --muted: #5a6067;
+  --line: #d7dad5; --accent: #a0291f; --wood: #b98c43;
+  --font: "NeoDunggeunmo", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #131518; --surface: #1c1f23; --ink: #eceeea; --muted: #a1a7ad;
+          --line: #33373c; --accent: #e2675b; --wood: #d4ac6a; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--font); }
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--wood); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+/* ======= Header ======= */
+header { padding: 36px 0 16px; }
+h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.2; margin: 0; }
+.lede { margin: 6px 0 0; color: var(--muted); font-size: .95rem; }
+.lede a { color: var(--muted); }
+
+/* ======= Controls ======= */
+.bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls input, .controls select { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.controls input { flex: 1 1 200px; min-width: 0; }
+.controls select { flex: 0 1 260px; min-width: 0; }
+.count { color: var(--muted); font-size: .88rem; }
+.years { display: flex; gap: 4px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; }
+.years a { flex: none; text-decoration: none; font-size: .88rem; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 1px 10px; font-variant-numeric: tabular-nums; }
+.years a:hover { border-color: var(--ink); }
+
+/* ======= Gallery ======= */
+main { padding: 8px 0 72px; }
+.year { scroll-margin-top: 110px; }
+.year h2 { font-size: 1.5rem; margin: 28px 0 10px; display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
+.year h2 small { font-size: .85rem; color: var(--muted); font-weight: 400; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+@media (max-width: 520px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+.item { display: flex; flex-direction: column; text-align: left; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; cursor: pointer; }
+.item:hover { border-color: var(--accent); }
+.thumb { aspect-ratio: 4 / 3; width: 100%; background: var(--line); overflow: hidden; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cap { padding: 8px 10px 10px; }
+.cap .t { font-size: .9rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cap .m { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+/* Tile shown when an article has no usable preview image */
+.tile { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; padding: 10px; text-align: center;
+        background: repeating-linear-gradient(0deg, transparent 0 23px, color-mix(in srgb, var(--wood) 35%, transparent) 23px 24px),
+                    repeating-linear-gradient(90deg, transparent 0 23px, color-mix(in srgb, var(--wood) 35%, transparent) 23px 24px),
+                    color-mix(in srgb, var(--wood) 22%, var(--surface)); }
+.tile .p { font-size: 1.05rem; }
+.tile .y { font-size: .85rem; color: var(--muted); }
+.empty { color: var(--muted); padding: 30px 0; }
+
+/* ======= Viewer ======= */
+dialog { border: 0; padding: 0; background: var(--surface); color: var(--ink); border-radius: 10px; width: min(920px, 94vw); max-height: 92vh; }
+dialog::backdrop { background: rgba(0, 0, 0, .7); }
+.view-img { background: #000; display: flex; justify-content: center; }
+.view-img img { width: 100%; max-height: 64vh; object-fit: contain; display: block; }
+.view-img .tile { aspect-ratio: 16 / 9; }
+.view-body { padding: 14px 18px 18px; }
+.view-body h3 { margin: 0 0 4px; font-size: 1.1rem; line-height: 1.45; }
+.view-body .m { color: var(--muted); font-size: .88rem; }
+.view-body .ev { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.ev a { font-size: .82rem; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px; }
+.ev a:hover { border-color: var(--ink); }
+.view-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: .9rem; text-decoration: none; }
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.spacer { flex: 1; }
+footer { color: var(--muted); font-size: .8rem; padding: 0 0 40px; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>이세돌 사진첩</h1>
+  <p class="lede">기사에 실린 대표 사진을 연도별로 모았습니다. 사진은 각 언론사에서 불러오며, 저작권은 원저작자에게 있습니다.
+    <a href="https://claude.ai/artifact/QNQmE2fMzHjBTtG4uco8B9">이세돌 아카이브로 돌아가기</a></p>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="controls">
+      <input id="q" type="search" placeholder="제목·매체 검색" aria-label="제목·매체 검색">
+      <select id="event" aria-label="연대기 사건"><option value="">모든 사건</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <nav class="years" id="years" aria-label="연도 바로가기"></nav>
+  </div>
+</div>
+
+<main class="wrap" id="gallery"></main>
+
+<footer class="wrap">사진 미리보기는 매주 다시 확인합니다. 언론사 사정으로 사진이 바뀌거나 안 보일 수 있습니다.</footer>
+
+<dialog id="viewer" aria-label="사진 크게 보기">
+  <div class="view-img" id="v-img"></div>
+  <div class="view-body">
+    <h3 id="v-title"></h3>
+    <div class="m" id="v-meta"></div>
+    <div class="ev" id="v-events"></div>
+    <div class="view-actions">
+      <a class="btn primary" id="v-link" target="_blank" rel="noopener">기사 원문 보기</a>
+      <button class="btn" id="v-prev" type="button">← 이전</button>
+      <button class="btn" id="v-next" type="button">다음 →</button>
+      <span class="spacer"></span>
+      <button class="btn" id="v-close" type="button">닫기</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+// =======
+// Data: articles.json (articles + event titles), images.json (id -> preview url)
+// =======
+let articles = [];
+let events = {};
+let images = {};
+let shown = [];      // articles in the current filtered order (for prev/next)
+let current = -1;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const year = (a) => a.date.slice(0, 4);
+
+async function load() {
+  const [data, imgs] = await Promise.all([
+    fetch("data/articles.json").then((r) => r.json()),
+    fetch("data/images.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+  ]);
+  articles = data.articles.slice().sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  events = data.events;
+  images = imgs;
+
+  // Event dropdown: only events that have articles, in date order
+  const sel = $("event");
+  Object.entries(events)
+    .sort((a, b) => a[1].date.localeCompare(b[1].date))
+    .forEach(([id, e]) => sel.add(new Option(`${e.date.slice(0, 4)} ${e.title}`, id)));
+
+  readHash();
+  render();
+}
+
+// =======
+// Hash routes: #event-<id> filters by event, #y2016 jumps to a year
+// =======
+function readHash() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith("event-") && events[h.slice(6)]) $("event").value = h.slice(6);
+}
+
+function filtered() {
+  const words = $("q").value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const ev = $("event").value;
+  return articles.filter((a) => {
+    if (ev && !a.events.includes(ev)) return false;
+    const text = `${a.title} ${a.publisher} ${a.date}`.toLowerCase();
+    return words.every((w) => text.includes(w));
+  });
+}
+
+function tileHtml(a) {
+  return `<div class="tile"><span class="p">${esc(a.publisher)}</span><span class="y">${esc(a.date)}</span></div>`;
+}
+
+function thumbHtml(a) {
+  const src = images[a.id];
+  if (!src) return tileHtml(a);
+  return `<img src="${esc(src)}" alt="${esc(a.title)}" loading="lazy" referrerpolicy="no-referrer" data-id="${esc(a.id)}">`;
+}
+
+function render() {
+  shown = filtered();
+  $("count").textContent = `${shown.length}건`;
+
+  const byYear = {};
+  shown.forEach((a, i) => (byYear[year(a)] = byYear[year(a)] || []).push(i));
+  const ys = Object.keys(byYear).sort();
+
+  $("years").innerHTML = ys.map((y) => `<a href="#y${y}">${y}</a>`).join("");
+  $("gallery").innerHTML = ys.length
+    ? ys.map((y) => `
+      <section class="year" id="y${y}">
+        <h2>${y} <small>${byYear[y].length}건</small></h2>
+        <div class="grid">${byYear[y].map((i) => {
+          const a = shown[i];
+          return `<button class="item" type="button" data-i="${i}">
+            <div class="thumb">${thumbHtml(a)}</div>
+            <div class="cap"><div class="t">${esc(a.title)}</div><div class="m">${esc(a.publisher)} · ${esc(a.date)}</div></div>
+          </button>`;
+        }).join("")}</div>
+      </section>`).join("")
+    : `<p class="empty">맞는 기사가 없습니다.</p>`;
+
+  // Swap broken images for the tile
+  $("gallery").querySelectorAll("img").forEach((img) => {
+    img.addEventListener("error", () => {
+      const a = articles.find((x) => x.id === img.dataset.id);
+      img.parentElement.innerHTML = tileHtml(a);
+    }, { once: true });
+  });
+
+  // Jump to a year if the hash asks for one
+  const h = location.hash.slice(1);
+  if (/^y\d{4}$/.test(h) && $(h)) $(h).scrollIntoView();
+}
+
+// =======
+// Viewer
+// =======
+function openViewer(i) {
+  current = i;
+  const a = shown[i];
+  const src = images[a.id];
+  $("v-img").innerHTML = src
+    ? `<img src="${esc(src)}" alt="${esc(a.title)}" referrerpolicy="no-referrer">`
+    : tileHtml(a);
+  const img = $("v-img").querySelector("img");
+  if (img) img.addEventListener("error", () => ($("v-img").innerHTML = tileHtml(a)), { once: true });
+
+  $("v-title").textContent = a.title;
+  $("v-meta").textContent = `${a.publisher} · ${a.date}`;
+  $("v-link").href = a.url;
+  $("v-events").innerHTML = a.events
+    .filter((e) => events[e])
+    .map((e) => `<a href="#event-${esc(e)}" data-ev="${esc(e)}">${esc(events[e].title)}</a>`).join("");
+  $("v-prev").disabled = i <= 0;
+  $("v-next").disabled = i >= shown.length - 1;
+  if (!$("viewer").open) $("viewer").showModal();
+}
+
+$("gallery").addEventListener("click", (e) => {
+  const item = e.target.closest(".item");
+  if (item) openViewer(Number(item.dataset.i));
+});
+$("v-prev").addEventListener("click", () => current > 0 && openViewer(current - 1));
+$("v-next").addEventListener("click", () => current < shown.length - 1 && openViewer(current + 1));
+$("v-close").addEventListener("click", () => $("viewer").close());
+$("viewer").addEventListener("click", (e) => { if (e.target === $("viewer")) $("viewer").close(); });
+$("viewer").addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") $("v-prev").click();
+  if (e.key === "ArrowRight") $("v-next").click();
+});
+// Clicking an event inside the viewer filters the gallery by that event
+$("v-events").addEventListener("click", (e) => {
+  const link = e.target.closest("a[data-ev]");
+  if (!link) return;
+  $("viewer").close();
+});
+
+$("q").addEventListener("input", render);
+$("event").addEventListener("change", () => {
+  const ev = $("event").value;
+  history.replaceState(null, "", ev ? `#event-${ev}` : location.pathname);
+  render();
+  window.scrollTo(0, 0);
+});
+window.addEventListener("hashchange", () => {
+  const h = location.hash.slice(1);
+  if (h.startsWith("event-")) { readHash(); render(); window.scrollTo(0, 0); }
+  else if (/^y\d{4}$/.test(h) && $(h)) $(h).scrollIntoView();
+});
+
+load();
+</script>
+</body>
+</html>

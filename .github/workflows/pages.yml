@@ -1,0 +1,45 @@
+# =======
+# Build the photo album and publish it to GitHub Pages.
+# Runs on every push to main, every Monday (to refresh preview images), or by hand.
+# =======
+name: Build photo album
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 18 * * 0"   # Monday 03:17 KST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Collect preview images
+        run: python3 scripts/fetch_images.py data/articles.json site/data
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
