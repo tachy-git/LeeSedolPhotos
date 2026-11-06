@@ -22,7 +22,9 @@ TIMEOUT = 20
 # Meta tags to look for, best first
 # =======
 # Images whose address contains one of these are page decorations, not photos
-SKIP_WORDS = ["logo", "icon", "btn", "button", "banner", "blank", "spacer", "pixel", "ad_", "/ad/", "sprite", "profile", "reporter", ".gif", ".svg"]
+SKIP_WORDS = ["logo", "icon", "btn", "button", "banner", "blank", "spacer", "pixel", "/ad/", "sprite",
+              "profile", "reporter", ".gif", ".svg", "footer", "share", "og-image", "ogimage",
+              "meta-image", "meta_image", "placeholder", "qr-code", "eden-cn"]
 META_KEYS = ["og:image", "og:image:url", "og:image:secure_url", "twitter:image", "twitter:image:src"]
 
 
@@ -48,13 +50,18 @@ class MetaParser(HTMLParser):
                 self.first_img = src
 
 
+def is_decoration(src):
+    low = src.lower()
+    return any(w in low for w in SKIP_WORDS)
+
+
 def looks_like_photo(src):
     low = src.lower()
     if not src or low.startswith("data:"):
         return False
     if not any(ext in low for ext in (".jpg", ".jpeg", ".png", ".webp")):
         return False
-    return not any(w in low for w in SKIP_WORDS)
+    return not is_decoration(src)
 
 
 def find_image(url):
@@ -75,9 +82,10 @@ def fetch_image(url):
     candidates = [parser.found[k] for k in META_KEYS + ["image_src"] if k in parser.found]
     if parser.first_img:
         candidates.append(parser.first_img)
-    if not candidates:
-        return None
-    return urljoin(final_url, candidates[0])
+    for c in candidates:
+        if not is_decoration(c):
+            return urljoin(final_url, c)
+    return None
 
 
 def check(article):
@@ -95,8 +103,18 @@ def main():
     with ThreadPoolExecutor(max_workers=8) as pool:
         results = list(pool.map(check, data["articles"]))
 
+    # =======
+    # The same image on two or more different articles is a site default, not a photo
+    # =======
+    seen = {}
+    for _, image, _ in results:
+        if image:
+            seen[image] = seen.get(image, 0) + 1
+
     images = {}
     for aid, image, error in results:
+        if image and seen[image] > 1:
+            image, error = None, "site default image"
         if image:
             images[aid] = image
             print(f"image     {aid}  {image}")
