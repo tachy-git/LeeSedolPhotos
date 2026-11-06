@@ -24,7 +24,7 @@ TIMEOUT = 20
 # Images whose address contains one of these are page decorations, not photos
 SKIP_WORDS = ["logo", "icon", "btn", "button", "banner", "blank", "spacer", "pixel", "/ad/", "sprite",
               "profile", "reporter", ".gif", ".svg", "footer", "share", "og-image", "ogimage",
-              "meta-image", "meta_image", "placeholder", "qr-code", "eden-cn"]
+              "meta-image", "meta_image", "placeholder", "qr-code", "eden-cn", "/ads/", "badge", "/ico"]
 META_KEYS = ["og:image", "og:image:url", "og:image:secure_url", "twitter:image", "twitter:image:src"]
 
 
@@ -64,14 +64,14 @@ def looks_like_photo(src):
     return not is_decoration(src)
 
 
-def find_image(url):
+def find_image(url, year):
     try:
-        return fetch_image(url)
+        return fetch_image(url, year)
     except (TimeoutError, urllib.error.URLError):
-        return fetch_image(url)  # one retry for slow servers
+        return fetch_image(url, year)  # one retry for slow servers
 
 
-def fetch_image(url):
+def fetch_image(url, year):
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept-Language": "ko,zh;q=0.8,en;q=0.6"})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         # The <head> is enough; meta tags are ASCII so any decoding works
@@ -80,7 +80,8 @@ def fetch_image(url):
     parser = MetaParser()
     parser.feed(html)
     candidates = [parser.found[k] for k in META_KEYS + ["image_src"] if k in parser.found]
-    if parser.first_img:
+    # A plain <img> may be from a sidebar; trust it only if its address has the article's year
+    if parser.first_img and year in parser.first_img:
         candidates.append(parser.first_img)
     for c in candidates:
         if not is_decoration(c):
@@ -90,7 +91,7 @@ def fetch_image(url):
 
 def check(article):
     try:
-        return article["id"], find_image(article["url"]), None
+        return article["id"], find_image(article["url"], article["date"][:4]), None
     except Exception as e:  # network errors, HTTP errors, bad pages
         return article["id"], None, str(e)[:120]
 
