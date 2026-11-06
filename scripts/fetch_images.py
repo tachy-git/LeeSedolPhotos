@@ -99,6 +99,7 @@ def main():
     for aid, image, error in results:
         if image:
             images[aid] = image
+            print(f"image     {aid}  {image}")
         else:
             print(f"no image  {aid}  {error or 'no meta tag'}")
 
